@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 int width, height, fruitX, fruitY, score, gameover;
 int *hash;
@@ -11,7 +12,9 @@ struct snake {
 } *snake;
 
 void getInput() {
-    char input = getchar();
+    char input;
+    while ((input = getchar()) && (input == 10))
+        ;
     switch (input) {
     case 'a':
     case 'A':
@@ -41,7 +44,8 @@ void getInput() {
 }
 
 void update() {
-    if(gameover) return;
+    if (gameover)
+        return;
     int x = snake->x, y = snake->y;
     switch (direction) {
     case 'a':
@@ -57,6 +61,11 @@ void update() {
         y--;
         break;
     }
+    if (x == 0 || x == width - 1 || y == 0 || y == height - 1 ||
+        hash[(y * width) + x] == 1) {
+        gameover = 1;
+        return;
+    }
     struct snake *newHead = malloc(sizeof(struct snake));
     newHead->x = x;
     newHead->y = y;
@@ -69,20 +78,23 @@ void update() {
         struct snake *remove = tmp->next;
         tmp->next = NULL;
         hash[(remove->y * width) + remove->x] = 0;
-    } else {
+        hash[(snake->y * width) + snake->x] = 1;
+    } else if (snake->x == fruitX && snake->y == fruitY) {
         score++;
+        hash[(snake->y * width) + snake->x] = 1;
+        while (((fruitX = (rand() % (width-2)) + 1) &&
+                (fruitY = (rand() % (height-2)) + 1)) &&
+               (hash[(fruitY * width) + fruitX] == 1))
+            ;
     }
 }
 
 void print() {
-    if(gameover) return;
-    for (int i = 0; i < width; i++) {
-        for (int j = 0; j < height; j++) {
-            if (i == 0 || i == width - 1 || j == 0 || j == height - 1) {
-                printf("#");
-                continue;
-            }
-            if (i == fruitX && j == fruitY) {
+    if (gameover)
+        return;
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            if (j == fruitX && i == fruitY) {
                 printf("@");
                 continue;
             }
@@ -107,6 +119,10 @@ void print() {
                 printf("0");
                 continue;
             }
+            if (i == 0 || i == height - 1 || j == 0 || j == width - 1) {
+                printf("#");
+                continue;
+            }
             printf(" ");
         }
         printf("\n");
@@ -120,12 +136,12 @@ void init(int sizeX, int sizeY) {
     height = sizeY;
     score = 0;
     gameover = 0;
-    fruitX = (rand() % width) + 1;
-    fruitY = (rand() % height) + 1;
+    fruitX = (rand() % (width-2)) + 1;
+    fruitY = (rand() % (height-2)) + 1;
     snake = malloc(sizeof(struct snake));
     snake->next = NULL;
-    while (((snake->x = (rand() % width) + 1) &&
-            (snake->y = (rand() % height) + 1)) &&
+    while (((snake->x = (rand() % (width-2)) + 1) &&
+            (snake->y = (rand() % (height-2)) + 1)) &&
            (fruitX == snake->x && fruitY == snake->y))
         ;
     hash = calloc(width * height, sizeof(int));
@@ -134,8 +150,11 @@ void init(int sizeX, int sizeY) {
 }
 
 int main() {
-    init(20, 40);
+    srand(time(NULL));
+    init(20, 20);
     while (!gameover) {
+        system("clear");
+        print();
         getInput();
         update();
         print();
