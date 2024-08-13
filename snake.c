@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-int width, height, fruitX, fruitY, score, gameover;
+int width, height, fruitX, fruitY, score, gameover,speed;
 int *hash;
 char direction;
 
@@ -85,6 +85,8 @@ void update() {
                 (fruitY = (rand() % (height - 2)) + 1)) &&
                (hash[(fruitY * width) + fruitX] == 1))
             ;
+        speed-=20;
+        timeout(speed);
     }
 }
 
@@ -138,7 +140,8 @@ void init(int sizeX, int sizeY) {
     //noecho();
     curs_set(FALSE);
     cbreak();
-    timeout(500);
+    speed = 500;
+    timeout(speed);
     width = sizeX;
     height = sizeY;
     score = 0;
@@ -158,7 +161,7 @@ void init(int sizeX, int sizeY) {
 
 int main() {
     srand(time(NULL));
-    init(20, 20);
+    init(50, 20);
     print();
     while (!gameover) {
         getInput();
