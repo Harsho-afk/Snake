@@ -3,9 +3,11 @@
 #include <stdlib.h>
 #include <time.h>
 
-int width, height, fruitX, fruitY, score, gameover,speed;
+int width, height, fruitX, fruitY, score = 0, gameover = 0, speed, direction;
 int *hash;
-char direction;
+WINDOW *win;
+
+enum { UP, LEFT, DOWN, RIGHT };
 
 struct snake {
     int x, y;
@@ -14,29 +16,30 @@ struct snake {
 
 void getInput() {
     char input = getch();
+    if (input >= 'A' && input <= 'Z')
+        input = input - 'A' + 'a';
     switch (input) {
     case 'a':
-    case 'A':
-        if (direction != 'd')
-            direction = 'a';
+    case KEY_LEFT:
+        if (direction != RIGHT)
+            direction = LEFT;
         break;
     case 's':
-    case 'S':
-        if (direction != 'w')
-            direction = 's';
+    case KEY_DOWN:
+        if (direction != UP)
+            direction = DOWN;
         break;
     case 'd':
-    case 'D':
-        if (direction != 'a')
-            direction = 'd';
+    case KEY_RIGHT:
+        if (direction != LEFT)
+            direction = RIGHT;
         break;
     case 'w':
-    case 'W':
-        if (direction != 's')
-            direction = 'w';
+    case KEY_UP:
+        if (direction != DOWN)
+            direction = UP;
         break;
     case 'q':
-    case 'Q':
         gameover = 1;
         break;
     }
@@ -47,16 +50,16 @@ void update() {
         return;
     int x = snake->x, y = snake->y;
     switch (direction) {
-    case 'a':
+    case LEFT:
         x--;
         break;
-    case 's':
+    case DOWN:
         y++;
         break;
-    case 'd':
+    case RIGHT:
         x++;
         break;
-    case 'w':
+    case UP:
         y--;
         break;
     }
@@ -84,8 +87,10 @@ void update() {
         while (((fruitX = (rand() % (width - 2)) + 1) &&
                 (fruitY = (rand() % (height - 2)) + 1)) &&
                (hash[(fruitY * width) + fruitX] == 1))
-            ;
-        speed-=20;
+            ; // get new position of fruit
+        speed -= 20;
+        if (speed < 250)
+            speed = 250;
         timeout(speed);
     }
 }
@@ -93,81 +98,85 @@ void update() {
 void print() {
     if (gameover)
         return;
-    erase();
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            if (j == fruitX && i == fruitY) {
-                printw("@");
-                continue;
-            }
-            if (snake->x == j && snake->y == i) {
-                switch (direction) {
-                case 'a':
-                    printw("<");
-                    break;
-                case 's':
-                    printw("v");
-                    break;
-                case 'd':
-                    printw(">");
-                    break;
-                case 'w':
-                    printw("^");
-                    break;
-                }
-                continue;
-            }
-            if (hash[(i * width) + j] == 1) {
-                printw("0");
-                continue;
-            }
-            if (i == 0 || i == height - 1 || j == 0 || j == width - 1) {
-                printw("#");
-                continue;
-            }
-            printw(" ");
-        }
-        printw("\n");
+    werase(win);
+    box(win, 0, 0);
+    wattron(win, COLOR_PAIR(1));
+    mvwprintw(win, fruitY, fruitX, "@");
+    wattroff(win, COLOR_PAIR(1));
+    wattron(win, COLOR_PAIR(2));
+    mvwprintw(win, snake->y, snake->x,
+              (direction == UP)     ? "^"
+              : (direction == LEFT) ? "<"
+              : (direction == DOWN) ? "v"
+                                    : ">");
+    for (struct snake *tmp = snake->next; tmp != NULL; tmp = tmp->next) {
+        mvwprintw(win, tmp->y, tmp->x, "O");
     }
-    printw("Score = %d\n", score);
-    printw("Press 'q' to exit\n");
-    refresh();
+    wattroff(win, COLOR_PAIR(2));
+    mvprintw(((LINES - height) / 2) - 1, (COLS - width) / 2, "Score = %d",
+             score);
+    wrefresh(win);
+    wrefresh(stdscr);
 }
 
-void init(int sizeX, int sizeY) {
+void init() {
+    int startY, startX;
+    // terminal
     initscr();
     keypad(stdscr, TRUE);
-    //noecho();
+    noecho();
     curs_set(FALSE);
     cbreak();
     speed = 500;
     timeout(speed);
-    width = sizeX;
-    height = sizeY;
-    score = 0;
-    gameover = 0;
-    fruitX = (rand() % (width - 2)) + 1;
-    fruitY = (rand() % (height - 2)) + 1;
+    start_color();
+    init_pair(1, COLOR_RED, COLOR_BLACK);
+    init_pair(2, COLOR_GREEN, COLOR_BLACK);
+    // window
+    height = LINES < 20 ? LINES : 20;
+    width = COLS < 20 ? (LINES + 50) : 70;
+    if (COLS < width)
+        width = COLS;
+    startY = (LINES - height) / 2;
+    startX = (COLS - width) / 2;
+    win = newwin(height, width, startY, startX);
+    refresh();
+    wrefresh(win);
+    // snake
     snake = malloc(sizeof(struct snake));
     snake->next = NULL;
-    while (((snake->x = (rand() % (width - 2)) + 1) &&
-            (snake->y = (rand() % (height - 2)) + 1)) &&
-           (fruitX == snake->x && fruitY == snake->y))
-        ;
+    snake->x = width / 2;
+    snake->y = height / 2;
     hash = calloc(width * height, sizeof(int));
     hash[(snake->y * width) + snake->x] = 1;
-    direction = 'w';
+    direction = UP;
+    // fruit
+    while (((fruitX = (rand() % (width - 2)) + 1) &&
+            (fruitY = (rand() % (height - 2)) + 1)) &&
+           (hash[(fruitY * width) + fruitX] == 1))
+        ; // get position of fruit where snake is not there
+}
+
+void freeAll() {
+    struct snake* tmp = snake;
+    while(tmp != NULL) {
+        snake = snake->next;
+        free(tmp);
+        tmp = snake;
+    }
 }
 
 int main() {
     srand(time(NULL));
-    init(50, 20);
+    init();
     print();
     while (!gameover) {
         getInput();
         update();
         print();
     }
+    delwin(win);
     endwin();
+    freeAll();
     return 0;
 }
