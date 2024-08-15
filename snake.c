@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 
 int width, height, fruitX, fruitY, score = 0, gameover = 0, speed, direction;
 int *hash;
@@ -96,8 +97,15 @@ void update() {
 }
 
 void print() {
-    if (gameover)
+    if(gameover) {
+        werase(win);
+        mvwprintw(win, height / 2, width / 2 - 4, "GAME OVER");
+        wrefresh(win);
+        sleep(3);
+
         return;
+    }
+    
     werase(win);
     box(win, 0, 0);
     wattron(win, COLOR_PAIR(1));
