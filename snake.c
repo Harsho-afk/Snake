@@ -15,9 +15,9 @@ struct snake {
 } *snake;
 
 void getInput() {
-    char input = getch();
-    if (input >= 'A' && input <= 'Z')
-        input = input - 'A' + 'a';
+    int input = getch();
+    if(input >= 'A' && input <= 'Z') { input = input - 'A' + 'a'; }
+
     switch (input) {
     case 'a':
     case KEY_LEFT:
