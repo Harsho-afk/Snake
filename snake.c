@@ -17,7 +17,9 @@ struct snake {
 
 void getInput() {
     int input = getch();
-    if(input >= 'A' && input <= 'Z') { input = input - 'A' + 'a'; }
+    if (input >= 'A' && input <= 'Z') {
+        input = input - 'A' + 'a';
+    }
 
     switch (input) {
     case 'a':
@@ -97,15 +99,13 @@ void update() {
 }
 
 void print() {
-    if(gameover) {
+    if (gameover) {
         werase(win);
         mvwprintw(win, height / 2, width / 2 - 4, "GAME OVER");
         wrefresh(win);
         sleep(3);
-
         return;
     }
-    
     werase(win);
     box(win, 0, 0);
     wattron(win, COLOR_PAIR(1));
@@ -166,8 +166,8 @@ void init() {
 }
 
 void freeAll() {
-    struct snake* tmp = snake;
-    while(tmp != NULL) {
+    struct snake *tmp = snake;
+    while (tmp != NULL) {
         snake = snake->next;
         free(tmp);
         tmp = snake;
