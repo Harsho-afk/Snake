@@ -6,6 +6,7 @@ A terminal-based Snake game written in C using the ncurses library. Enjoy playin
 
 - **GCC Compiler**
 - **ncurses Library**
+- **Make** (Optional)
 
 ## Installation
 
